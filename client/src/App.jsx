@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import SlugPage from "./pages/SlugPage";
+import Home from "./Pages/Home";
+import SlugPage from "./Pages/SlugPage";
 
 export default function App() {
   return (
