@@ -19,6 +19,7 @@ const imageSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+    expires: 86400, // ⏱️ auto-delete after 24 hours (in seconds)
   },
 });
 
