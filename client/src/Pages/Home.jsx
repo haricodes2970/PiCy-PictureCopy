@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Home() {
   const [slug, setSlug] = useState("");
   const navigate = useNavigate();
+  const { dark, toggle } = useTheme();
 
   const handleGo = () => {
     if (slug.trim()) navigate(`/${slug.trim().toLowerCase()}`);
@@ -12,19 +14,49 @@ export default function Home() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-          background: #0a0a0a;
-          color: #f0ece4;
-          font-family: 'DM Mono', monospace;
-          min-height: 100vh;
-          overflow-x: hidden;
+        :root[data-theme="dark"] {
+          --bg: #0c0c0c;
+          --bg2: #161616;
+          --border: rgba(255,255,255,0.08);
+          --text: #f0ece4;
+          --text-muted: rgba(240,236,228,0.38);
+          --text-dim: rgba(240,236,228,0.16);
+          --accent: #ff5a1f;
+          --accent-hover: #ff7a45;
+          --accent-text: #0c0c0c;
+          --card: rgba(255,255,255,0.03);
+          --grid: rgba(255,255,255,0.028);
+          --glow: rgba(255,90,31,0.10);
         }
 
-        .home-wrap {
+        :root[data-theme="light"] {
+          --bg: #f5f0e8;
+          --bg2: #ede8df;
+          --border: rgba(0,0,0,0.09);
+          --text: #1a1a1a;
+          --text-muted: rgba(26,26,26,0.48);
+          --text-dim: rgba(26,26,26,0.22);
+          --accent: #ff5a1f;
+          --accent-hover: #e04a10;
+          --accent-text: #fff;
+          --card: rgba(0,0,0,0.03);
+          --grid: rgba(0,0,0,0.05);
+          --glow: rgba(255,90,31,0.08);
+        }
+
+        html, body {
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'DM Mono', monospace;
+          min-height: 100vh;
+          transition: background 0.35s, color 0.35s;
+        }
+
+        .page {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
@@ -32,176 +64,205 @@ export default function Home() {
           justify-content: center;
           padding: 2rem;
           position: relative;
+          overflow: hidden;
         }
 
         .bg-grid {
-          position: fixed;
-          inset: 0;
+          position: fixed; inset: 0;
           background-image:
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-          background-size: 60px 60px;
-          pointer-events: none;
-          z-index: 0;
+            linear-gradient(var(--grid) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+          background-size: 56px 56px;
+          pointer-events: none; z-index: 0;
         }
 
-        .glow-blob {
+        .glow {
           position: fixed;
-          width: 600px;
-          height: 600px;
+          width: 800px; height: 800px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(255, 90, 31, 0.12) 0%, transparent 70%);
-          top: 50%;
-          left: 50%;
+          background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
+          top: 50%; left: 50%;
           transform: translate(-50%, -50%);
-          pointer-events: none;
-          z-index: 0;
-          animation: pulse 6s ease-in-out infinite;
+          pointer-events: none; z-index: 0;
+          animation: breathe 7s ease-in-out infinite;
         }
 
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        @keyframes breathe {
+          0%,100% { transform: translate(-50%,-50%) scale(1); }
+          50% { transform: translate(-50%,-50%) scale(1.12); }
         }
+
+        .theme-btn {
+          position: fixed; top: 1.5rem; right: 1.5rem; z-index: 100;
+          width: 44px; height: 44px; border-radius: 50%;
+          border: 1px solid var(--border);
+          background: var(--bg2);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.15rem;
+          transition: all 0.25s;
+          box-shadow: 0 2px 12px var(--glow);
+        }
+
+        .theme-btn:hover { border-color: var(--accent); transform: rotate(25deg) scale(1.08); }
 
         .content {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-direction: column;
+          position: relative; z-index: 1;
+          display: flex; flex-direction: column;
           align-items: center;
-          gap: 2.5rem;
-          max-width: 640px;
-          width: 100%;
-          animation: fadeUp 0.8s ease both;
+          gap: 2.6rem;
+          max-width: 560px; width: 100%;
+          animation: riseUp 0.75s cubic-bezier(0.16,1,0.3,1) both;
         }
 
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes riseUp {
+          from { opacity:0; transform:translateY(36px); }
+          to   { opacity:1; transform:translateY(0); }
         }
 
-        .logo-area {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
+        .logo-block {
+          display: flex; flex-direction: column;
+          align-items: center; gap: 0.9rem;
         }
 
-        .logo {
+        .mascot {
+          width: 100px; height: 100px;
+          object-fit: contain;
+          animation: float 4s ease-in-out infinite;
+          filter: drop-shadow(0 8px 20px rgba(255,90,31,0.25));
+        }
+
+        @keyframes float {
+          0%,100% { transform: translateY(0) rotate(-1deg); }
+          50%      { transform: translateY(-9px) rotate(1deg); }
+        }
+
+        .logo-text {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(5rem, 15vw, 9rem);
+          font-size: clamp(4.5rem, 15vw, 8rem);
           font-weight: 800;
-          letter-spacing: -0.04em;
-          line-height: 1;
-          color: #f0ece4;
-          position: relative;
+          letter-spacing: -0.045em;
+          line-height: 0.95;
+          color: var(--text);
+          text-align: center;
         }
 
-        .logo span {
-          color: #ff5a1f;
-        }
+        .logo-text span { color: var(--accent); }
 
         .tagline {
-          font-size: 0.75rem;
-          letter-spacing: 0.25em;
+          font-size: 0.7rem;
+          letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: rgba(240, 236, 228, 0.4);
+          color: var(--text-muted);
           font-weight: 300;
+          text-align: center;
         }
 
         .input-row {
-          display: flex;
           width: 100%;
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 4px;
+          display: flex;
+          border: 1.5px solid var(--border);
+          border-radius: 6px;
           overflow: hidden;
-          transition: border-color 0.2s;
-          background: rgba(255,255,255,0.03);
+          transition: border-color 0.2s, box-shadow 0.2s;
+          background: var(--card);
         }
 
         .input-row:focus-within {
-          border-color: #ff5a1f;
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px rgba(255,90,31,0.12);
         }
 
         .prefix {
-          padding: 1rem 1.2rem;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.85rem;
-          color: rgba(240,236,228,0.3);
-          border-right: 1px solid rgba(255,255,255,0.1);
+          padding: 0.95rem 1.1rem;
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          border-right: 1px solid var(--border);
           white-space: nowrap;
-          display: flex;
-          align-items: center;
+          display: flex; align-items: center;
+          background: var(--bg2);
+          transition: background 0.35s;
+          user-select: none;
         }
 
         .slug-input {
-          flex: 1;
-          padding: 1rem 1.2rem;
-          background: transparent;
-          border: none;
-          outline: none;
+          flex: 1; min-width: 0;
+          padding: 0.95rem 1.1rem;
+          background: transparent; border: none; outline: none;
           font-family: 'DM Mono', monospace;
           font-size: 0.95rem;
-          color: #f0ece4;
-          caret-color: #ff5a1f;
+          color: var(--text);
+          caret-color: var(--accent);
         }
 
-        .slug-input::placeholder {
-          color: rgba(240,236,228,0.2);
-        }
+        .slug-input::placeholder { color: var(--text-dim); }
 
         .go-btn {
-          padding: 1rem 1.8rem;
-          background: #ff5a1f;
-          border: none;
+          padding: 0.95rem 2rem;
+          background: var(--accent); border: none;
           cursor: pointer;
           font-family: 'Syne', sans-serif;
-          font-size: 0.85rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #0a0a0a;
+          font-size: 0.8rem; font-weight: 700;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--accent-text);
           transition: background 0.2s, transform 0.1s;
+          white-space: nowrap;
         }
 
-        .go-btn:hover { background: #ff7a45; }
-        .go-btn:active { transform: scale(0.97); }
-        .go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .go-btn:hover:not(:disabled) { background: var(--accent-hover); }
+        .go-btn:active:not(:disabled) { transform: scale(0.96); }
+        .go-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .quick-slugs {
+          display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+        }
+
+        .qs {
+          padding: 0.3rem 0.85rem;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-size: 0.67rem;
+          color: var(--text-muted);
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: var(--card);
+        }
+
+        .qs:hover { border-color: var(--accent); color: var(--accent); }
 
         .hint {
-          font-size: 0.72rem;
-          color: rgba(240,236,228,0.25);
+          font-size: 0.68rem;
+          color: var(--text-dim);
           letter-spacing: 0.05em;
           text-align: center;
-          line-height: 1.8;
+          line-height: 2;
         }
 
-        .hint b {
-          color: rgba(240,236,228,0.5);
-          font-weight: 400;
-        }
+        .hint b { color: var(--text-muted); font-weight: 400; }
 
-        .bottom-label {
-          position: fixed;
-          bottom: 2rem;
-          left: 50%;
+        .footer {
+          position: fixed; bottom: 1.4rem; left: 50%;
           transform: translateX(-50%);
-          font-size: 0.65rem;
-          letter-spacing: 0.2em;
+          font-size: 0.58rem; letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: rgba(240,236,228,0.15);
-          z-index: 1;
+          color: var(--text-dim); z-index: 1; white-space: nowrap;
         }
       `}</style>
 
-      <div className="home-wrap">
+      <div className="page">
         <div className="bg-grid" />
-        <div className="glow-blob" />
+        <div className="glow" />
+
+        <button className="theme-btn" onClick={toggle}>
+          {dark ? "☀️" : "🌙"}
+        </button>
 
         <div className="content">
-          <div className="logo-area">
-            <div className="logo">Pi<span>cy</span></div>
+          <div className="logo-block">
+            <img className="mascot" src="/logo.png" alt="Picy"
+              onError={e => e.target.style.display = "none"} />
+            <div className="logo-text">Pi<span>cy</span></div>
             <div className="tagline">instant image sharing — no login, no fuss</div>
           </div>
 
@@ -211,8 +272,8 @@ export default function Home() {
               className="slug-input"
               placeholder="your-slug"
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleGo()}
+              onChange={e => setSlug(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleGo()}
               autoFocus
             />
             <button className="go-btn" onClick={handleGo} disabled={!slug.trim()}>
@@ -220,13 +281,19 @@ export default function Home() {
             </button>
           </div>
 
+          <div className="quick-slugs">
+            {["sunset", "meme", "design", "wallpaper", "art"].map(s => (
+              <span key={s} className="qs" onClick={() => navigate(`/${s}`)}>/{s}</span>
+            ))}
+          </div>
+
           <div className="hint">
-            Type any word and hit Go.<br />
-            <b>No account needed.</b> Just share the link.
+            Type any word and press Go.<br />
+            <b>No account needed.</b> Images auto-delete after 24 hours.
           </div>
         </div>
 
-        <div className="bottom-label">Picy — free forever for sharing</div>
+        <div className="footer">Picy · PictureCopy · free forever</div>
       </div>
     </>
   );
