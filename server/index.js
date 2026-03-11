@@ -31,6 +31,17 @@ setInterval(async () => {
 
 const PORT = process.env.PORT || 5000;
 
+// 🏓 Self-ping to prevent Render sleep
+import https from "https";
+
+setInterval(() => {
+  https.get("https://picy.onrender.com", (res) => {
+    console.log(`🏓 Ping: ${res.statusCode}`);
+  }).on("error", (err) => {
+    console.error("Ping failed:", err.message);
+  });
+}, 10 * 60 * 1000); // every 10 minutes
+
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
