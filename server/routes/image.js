@@ -16,29 +16,23 @@ const upload = multer({
   }
 });
 
-// Helper — update stats
 const trackStat = async (type) => {
   const today = new Date().toISOString().split("T")[0];
   let stats = await Stats.findOne();
   if (!stats) stats = new Stats();
-
   if (type === "upload") {
     stats.totalUploads += 1;
     const day = stats.dailyStats.find(d => d.date === today);
     if (day) day.uploads += 1;
     else stats.dailyStats.push({ date: today, uploads: 1, visits: 0 });
   }
-
   if (type === "visit") {
     stats.totalVisits += 1;
     const day = stats.dailyStats.find(d => d.date === today);
     if (day) day.visits += 1;
     else stats.dailyStats.push({ date: today, visits: 1, uploads: 0 });
   }
-
   if (type === "expired") stats.totalExpired += 1;
-
-  // Keep only last 30 days
   stats.dailyStats = stats.dailyStats.slice(-30);
   await stats.save();
 };
@@ -47,64 +41,77 @@ const trackStat = async (type) => {
 router.post("/:slug", upload.single("image"), async (req, res) => {
   try {
     const { slug } = req.params;
-
     const existing = await Image.findOne({ slug });
     if (existing) {
       return res.status(400).json({ error: "This URL is already taken!" });
     }
-
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         { folder: "picy" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+        (error, result) => { if (error) reject(error); else resolve(result); }
+      ).end(req.file.buffer);
+    });
+    const image = await Image.create({
+      slug, imageUrl: result.secure_url, publicId: result.public_id,
+    });
+    await trackStat("upload");
+    res.status(201).json({
+      imageUrl: image.imageUrl, slug: image.slug,
+      expiresAt: new Date(image.createdAt.getTime() + 86400000),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/:slug/overwrite — replace with new image
+router.put("/:slug/overwrite", upload.single("image"), async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const existing = await Image.findOne({ slug });
+    if (!existing) return res.status(404).json({ error: "Slug not found!" });
+
+    // Delete old from Cloudinary
+    await cloudinary.uploader.destroy(existing.publicId);
+
+    // Upload new to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: "picy" },
+        (error, result) => { if (error) reject(error); else resolve(result); }
       ).end(req.file.buffer);
     });
 
-    const image = await Image.create({
-      slug,
-      imageUrl: result.secure_url,
-      publicId: result.public_id,
-    });
-
-    await trackStat("upload");
-
-    res.status(201).json({
-      imageUrl: image.imageUrl,
-      slug: image.slug,
-      expiresAt: new Date(image.createdAt.getTime() + 86400000),
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// GET /api/:slug — fetch image
-router.get("/:slug", async (req, res) => {
-  try {
-    const image = await Image.findOne({ slug: req.params.slug });
-    if (!image) return res.status(404).json({ error: "No image found!" });
-
-    await trackStat("visit");
+    existing.imageUrl = result.secure_url;
+    existing.publicId = result.public_id;
+    await existing.save();
 
     res.json({
-      imageUrl: image.imageUrl,
-      slug: image.slug,
-      expiresAt: new Date(image.createdAt.getTime() + 86400000),
+      imageUrl: existing.imageUrl, slug: existing.slug,
+      expiresAt: new Date(existing.createdAt.getTime() + 86400000),
+      message: "Image replaced successfully!"
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Error handler
-router.use((err, req, res, next) => {
-  if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(400).json({ error: "File too large! Max size is 5MB." });
-  }
-  res.status(400).json({ error: err.message });
-});
+// PUT /api/:slug/blank — replace with tiny blank image
+router.put("/:slug/blank", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const existing = await Image.findOne({ slug });
+    if (!existing) return res.status(404).json({ error: "Slug not found!" });
 
-export default router;
+    // Delete old from Cloudinary
+    await cloudinary.uploader.destroy(existing.publicId);
+
+    // 1x1 transparent PNG — only 68 bytes!
+    const blankPng = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "base64"
+    );
+
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: "picy", public_id: `

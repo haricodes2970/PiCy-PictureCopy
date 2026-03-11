@@ -25,7 +25,11 @@ export default function SlugPage() {
   const [dragging, setDragging] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timer, setTimer] = useState("");
+  const [showOverwrite, setShowOverwrite] = useState(false);
+  const [overwriting, setOverwriting] = useState(false);
+  const [blanking, setBlanking] = useState(false);
   const fileRef = useRef();
+  const overwriteRef = useRef();
 
   useEffect(() => {
     axios.get(`${API}/${slug}`)
@@ -58,6 +62,36 @@ export default function SlugPage() {
     }
   };
 
+  const overwriteFile = async (file) => {
+    if (!file?.type.startsWith("image/")) return alert("Please upload an image!");
+    const formData = new FormData();
+    formData.append("image", file);
+    setOverwriting(true);
+    try {
+      const res = await axios.put(`${API}/${slug}/overwrite`, formData);
+      setImageUrl(res.data.imageUrl);
+      setShowOverwrite(false);
+    } catch (err) {
+      alert(err.response?.data?.error || "Overwrite failed!");
+    } finally {
+      setOverwriting(false);
+    }
+  };
+
+  const blankImage = async () => {
+    if (!window.confirm("Replace image with a blank? This cannot be undone.")) return;
+    setBlanking(true);
+    try {
+      const res = await axios.put(`${API}/${slug}/blank`);
+      setImageUrl(res.data.imageUrl);
+      setShowOverwrite(false);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to clear image!");
+    } finally {
+      setBlanking(false);
+    }
+  };
+
   const handleDrop = (e) => {
     e.preventDefault(); setDragging(false);
     uploadFile(e.dataTransfer.files[0]);
@@ -82,7 +116,7 @@ export default function SlugPage() {
           --text-dim: rgba(240,236,228,0.16);
           --accent: #ff5a1f; --accent-hover: #ff7a45; --accent-text: #0c0c0c;
           --card: rgba(255,255,255,0.03); --grid: rgba(255,255,255,0.028);
-          --glow: rgba(255,90,31,0.10); --success: #4ade80;
+          --glow: rgba(255,90,31,0.10); --success: #4ade80; --red: #f87171;
         }
         :root[data-theme="light"] {
           --bg: #f5f0e8; --bg2: #ede8df;
@@ -91,7 +125,7 @@ export default function SlugPage() {
           --text-dim: rgba(26,26,26,0.22);
           --accent: #ff5a1f; --accent-hover: #e04a10; --accent-text: #fff;
           --card: rgba(0,0,0,0.03); --grid: rgba(0,0,0,0.05);
-          --glow: rgba(255,90,31,0.07); --success: #16a34a;
+          --glow: rgba(255,90,31,0.07); --success: #16a34a; --red: #dc2626;
         }
 
         html, body, #root {
@@ -165,72 +199,51 @@ export default function SlugPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading {
-          display: flex; flex-direction: column; align-items: center; gap: 1rem;
-        }
-        .loading-text {
-          font-size: 0.7rem; color: var(--text-dim);
-          letter-spacing: 0.18em; text-transform: uppercase;
-        }
+        .loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .loading-text { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
 
         .upload-zone {
-          width: min(520px, 100%);
+          width: min(520px, 100%); margin: 0 auto;
           display: flex; flex-direction: column;
-          align-items: center; gap: 2.2rem;
-          margin: 0 auto; text-align: center;
+          align-items: center; gap: 2.2rem; text-align: center;
         }
 
         .upload-title h2 {
           font-family: 'Syne', sans-serif;
           font-size: clamp(1.8rem, 5vw, 2.6rem);
-          font-weight: 800; letter-spacing: -0.03em;
-          line-height: 1.1; color: var(--text);
+          font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
         }
-        .upload-title p {
-          margin-top: 0.5rem; font-size: 0.75rem;
-          color: var(--text-muted); letter-spacing: 0.04em;
-        }
+        .upload-title p { margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
 
         .drop-zone {
-          width: 100%; border: 1.5px dashed var(--border);
-          border-radius: 10px; padding: 3.5rem 2rem;
-          display: flex; flex-direction: column;
+          width: 100%; border: 1.5px dashed var(--border); border-radius: 10px;
+          padding: 3.5rem 2rem; display: flex; flex-direction: column;
           align-items: center; gap: 1.2rem; cursor: pointer;
           transition: border-color 0.2s, background 0.2s; background: var(--card);
         }
-        .drop-zone:hover, .drop-zone.drag {
-          border-color: var(--accent); background: rgba(255,90,31,0.04);
-        }
-
+        .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(255,90,31,0.04); }
         .drop-icon { font-size: 2.8rem; opacity: 0.5; }
-        .drop-label {
-          font-size: 0.78rem; color: var(--text-muted);
-          letter-spacing: 0.04em; text-align: center; line-height: 1.9;
-        }
+        .drop-label { font-size: 0.78rem; color: var(--text-muted); text-align: center; line-height: 1.9; }
         .drop-label b { color: var(--accent); font-weight: 400; }
 
         .upload-btn {
-          padding: 0.7rem 2rem; background: var(--accent);
-          border: none; border-radius: 4px; cursor: pointer;
-          font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+          padding: 0.7rem 2rem; background: var(--accent); border: none; border-radius: 4px;
+          cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
           letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text);
           transition: background 0.2s, transform 0.1s;
         }
         .upload-btn:hover { background: var(--accent-hover); }
-        .upload-btn:active { transform: scale(0.97); }
         .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .uploading-row {
           display: flex; align-items: center; gap: 0.6rem;
-          font-size: 0.72rem; color: var(--text-muted);
-          letter-spacing: 0.1em; text-transform: uppercase;
+          font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
         }
 
+        /* IMAGE VIEW */
         .image-view {
-          width: min(780px, 100%);
-          display: flex; flex-direction: column;
-          align-items: center; gap: 1.4rem;
-          margin: 0 auto;
+          width: min(780px, 100%); margin: 0 auto;
+          display: flex; flex-direction: column; align-items: center; gap: 1.4rem;
         }
 
         .img-frame {
@@ -238,34 +251,85 @@ export default function SlugPage() {
           border: 1px solid var(--border); background: var(--bg2);
           box-shadow: 0 32px 64px var(--glow), 0 8px 24px rgba(0,0,0,0.1);
         }
-        .img-frame img {
-          width: 100%; display: block;
-          object-fit: contain; max-height: 68vh;
-        }
+        .img-frame img { width: 100%; display: block; object-fit: contain; max-height: 68vh; }
 
         .timer-badge {
           padding: 0.3rem 0.85rem; border: 1px solid var(--border);
-          border-radius: 999px; font-size: 0.65rem; color: var(--text-muted);
-          letter-spacing: 0.06em; background: var(--card);
+          border-radius: 999px; font-size: 0.65rem; color: var(--text-muted); background: var(--card);
         }
         .timer-badge span { color: var(--accent); }
 
-        .actions {
-          display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: center;
-        }
+        /* ACTIONS */
+        .actions { display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: center; }
 
         .btn {
           padding: 0.65rem 1.4rem; border-radius: 5px;
           font-family: 'DM Mono', monospace; font-size: 0.72rem;
           letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
           text-transform: uppercase; text-decoration: none;
-          display: inline-flex; align-items: center;
+          display: inline-flex; align-items: center; gap: 0.4rem;
         }
         .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-text); }
         .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
         .btn-success { background: transparent; border: 1px solid var(--success); color: var(--success); }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+        .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+        .btn-danger:hover { background: rgba(248,113,113,0.08); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* OVERWRITE PANEL */
+        .overwrite-panel {
+          width: 100%; border: 1.5px dashed var(--border);
+          border-radius: 10px; padding: 1.8rem;
+          background: var(--card);
+          animation: fadeUp 0.3s ease both;
+        }
+
+        .overwrite-title {
+          font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+          letter-spacing: -0.01em; margin-bottom: 1.2rem; text-align: center;
+          color: var(--text);
+        }
+
+        .overwrite-options {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+        }
+
+        .overwrite-option {
+          padding: 1.2rem 1rem; border: 1px solid var(--border);
+          border-radius: 8px; background: var(--bg2); cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+          transition: all 0.2s; text-align: center;
+        }
+        .overwrite-option:hover { border-color: var(--accent); background: rgba(255,90,31,0.05); }
+        .overwrite-option:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .option-icon { font-size: 1.8rem; }
+
+        .option-label {
+          font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+        }
+
+        .option-desc { font-size: 0.62rem; color: var(--text-muted); line-height: 1.6; }
+
+        .option-danger { border-color: rgba(248,113,113,0.2); }
+        .option-danger:hover { border-color: var(--red); background: rgba(248,113,113,0.05); }
+
+        .overwrite-cancel {
+          margin-top: 0.75rem; width: 100%; padding: 0.6rem;
+          background: transparent; border: none; cursor: pointer;
+          font-family: 'DM Mono', monospace; font-size: 0.68rem;
+          color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase;
+          transition: color 0.2s;
+        }
+        .overwrite-cancel:hover { color: var(--text-muted); }
+
+        @media (max-width: 480px) {
+          .overwrite-options { grid-template-columns: 1fr; }
+          .slug-pill { display: none; }
+        }
       `}</style>
 
       <div className="page">
@@ -310,8 +374,7 @@ export default function SlugPage() {
                 </div>
                 {uploading ? (
                   <div className="uploading-row">
-                    <div className="spinner" style={{width:18,height:18}} />
-                    Uploading...
+                    <div className="spinner" style={{width:18,height:18}} /> Uploading...
                   </div>
                 ) : (
                   <button className="upload-btn"
@@ -321,8 +384,7 @@ export default function SlugPage() {
                 )}
               </div>
               <input ref={fileRef} type="file" accept="image/*"
-                style={{display:"none"}}
-                onChange={e => uploadFile(e.target.files[0])} />
+                style={{display:"none"}} onChange={e => uploadFile(e.target.files[0])} />
             </div>
           )}
 
@@ -331,15 +393,60 @@ export default function SlugPage() {
               <div className="img-frame">
                 <img src={imageUrl} alt={slug} />
               </div>
+
               {timer && <div className="timer-badge">⏱ <span>{timer}</span></div>}
-              <div className="actions">
-                <button className={`btn ${copied ? "btn-success" : "btn-primary"}`} onClick={copyLink}>
-                  {copied ? "✓ Copied!" : "Copy Link"}
-                </button>
-                <a href={imageUrl} download target="_blank" rel="noreferrer"
-                  className="btn btn-ghost">Download</a>
-                <button className="btn btn-ghost" onClick={() => navigate("/")}>← New Slug</button>
-              </div>
+
+              {!showOverwrite ? (
+                <div className="actions">
+                  <button className={`btn ${copied ? "btn-success" : "btn-primary"}`} onClick={copyLink}>
+                    {copied ? "✓ Copied!" : "Copy Link"}
+                  </button>
+                  <a href={imageUrl} download target="_blank" rel="noreferrer"
+                    className="btn btn-ghost">Download</a>
+                  <button className="btn btn-ghost"
+                    onClick={() => setShowOverwrite(true)}>
+                    🔁 Overwrite
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => navigate("/")}>← New Slug</button>
+                </div>
+              ) : (
+                <div className="overwrite-panel">
+                  <div className="overwrite-title">🔒 Replace this image</div>
+                  <div className="overwrite-options">
+
+                    {/* New image option */}
+                    <button className="overwrite-option"
+                      disabled={overwriting || blanking}
+                      onClick={() => overwriteRef.current.click()}>
+                      <div className="option-icon">🖼️</div>
+                      <div className="option-label">New Image</div>
+                      <div className="option-desc">Replace with a<br />different image</div>
+                      {overwriting && <div className="uploading-row" style={{fontSize:"0.65rem"}}>
+                        <div className="spinner" style={{width:14,height:14}} /> Replacing...
+                      </div>}
+                    </button>
+
+                    {/* Blank image option */}
+                    <button className="overwrite-option option-danger"
+                      disabled={overwriting || blanking}
+                      onClick={blankImage}>
+                      <div className="option-icon">🗑️</div>
+                      <div className="option-label">Clear Image</div>
+                      <div className="option-desc">Replace with a<br />tiny blank pixel</div>
+                      {blanking && <div className="uploading-row" style={{fontSize:"0.65rem"}}>
+                        <div className="spinner" style={{width:14,height:14}} /> Clearing...
+                      </div>}
+                    </button>
+
+                  </div>
+                  <button className="overwrite-cancel" onClick={() => setShowOverwrite(false)}>
+                    ✕ Cancel
+                  </button>
+                </div>
+              )}
+
+              <input ref={overwriteRef} type="file" accept="image/*"
+                style={{display:"none"}} onChange={e => overwriteFile(e.target.files[0])} />
             </div>
           )}
         </div>
