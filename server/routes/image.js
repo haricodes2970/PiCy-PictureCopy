@@ -5,7 +5,15 @@ import Image from "../models/Image.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files allowed!"));
+  }
+});
 
 // POST /api/:slug — upload image
 router.post("/:slug", upload.single("image"), async (req, res) => {
@@ -36,7 +44,7 @@ router.post("/:slug", upload.single("image"), async (req, res) => {
     res.status(201).json({
       imageUrl: image.imageUrl,
       slug: image.slug,
-      expiresAt: new Date(image.createdAt.getTime() + 86400000), // +24hrs
+      expiresAt: new Date(image.createdAt.getTime() + 86400000),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -57,6 +65,14 @@ router.get("/:slug", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Error handler for multer
+router.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ error: "File too large! Max size is 5MB." });
+  }
+  res.status(400).json({ error: err.message });
 });
 
 export default router;
