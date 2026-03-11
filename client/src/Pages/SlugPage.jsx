@@ -29,10 +29,7 @@ export default function SlugPage() {
 
   useEffect(() => {
     axios.get(`${API}/${slug}`)
-      .then(res => {
-        setImageUrl(res.data.imageUrl);
-        setExpiresAt(res.data.expiresAt);
-      })
+      .then(res => { setImageUrl(res.data.imageUrl); setExpiresAt(res.data.expiresAt); })
       .catch(() => setEmpty(true))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -84,10 +81,8 @@ export default function SlugPage() {
           --text: #f0ece4; --text-muted: rgba(240,236,228,0.38);
           --text-dim: rgba(240,236,228,0.16);
           --accent: #ff5a1f; --accent-hover: #ff7a45; --accent-text: #0c0c0c;
-          --card: rgba(255,255,255,0.03);
-          --grid: rgba(255,255,255,0.028);
-          --glow: rgba(255,90,31,0.10);
-          --success: #4ade80;
+          --card: rgba(255,255,255,0.03); --grid: rgba(255,255,255,0.028);
+          --glow: rgba(255,90,31,0.10); --success: #4ade80;
         }
         :root[data-theme="light"] {
           --bg: #f5f0e8; --bg2: #ede8df;
@@ -95,20 +90,18 @@ export default function SlugPage() {
           --text: #1a1a1a; --text-muted: rgba(26,26,26,0.48);
           --text-dim: rgba(26,26,26,0.22);
           --accent: #ff5a1f; --accent-hover: #e04a10; --accent-text: #fff;
-          --card: rgba(0,0,0,0.03);
-          --grid: rgba(0,0,0,0.05);
-          --glow: rgba(255,90,31,0.07);
-          --success: #16a34a;
+          --card: rgba(0,0,0,0.03); --grid: rgba(0,0,0,0.05);
+          --glow: rgba(255,90,31,0.07); --success: #16a34a;
         }
 
-        html, body {
+        html, body, #root {
+          width: 100%; min-height: 100vh;
           background: var(--bg); color: var(--text);
           font-family: 'DM Mono', monospace;
-          min-height: 100vh;
           transition: background 0.35s, color 0.35s;
         }
 
-        .page { min-height: 100vh; display: flex; flex-direction: column; }
+        .page { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
 
         .bg-grid {
           position: fixed; inset: 0;
@@ -121,19 +114,15 @@ export default function SlugPage() {
 
         .topbar {
           position: relative; z-index: 10;
-          display: flex; align-items: center;
-          justify-content: space-between;
+          display: flex; align-items: center; justify-content: space-between;
           padding: 1.2rem 2rem;
           border-bottom: 1px solid var(--border);
-          background: var(--bg);
-          transition: background 0.35s;
+          background: var(--bg); transition: background 0.35s;
         }
 
         .logo-sm {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800; font-size: 1.4rem;
-          letter-spacing: -0.03em;
-          cursor: pointer; color: var(--text);
+          font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem;
+          letter-spacing: -0.03em; cursor: pointer; color: var(--text);
           display: flex; align-items: center; gap: 0.5rem;
         }
         .logo-sm span { color: var(--accent); }
@@ -142,20 +131,15 @@ export default function SlugPage() {
         .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
 
         .slug-pill {
-          padding: 0.38rem 1rem;
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          font-size: 0.72rem;
-          color: var(--text-muted);
-          letter-spacing: 0.04em;
-          background: var(--card);
+          padding: 0.38rem 1rem; border: 1px solid var(--border);
+          border-radius: 999px; font-size: 0.72rem;
+          color: var(--text-muted); letter-spacing: 0.04em; background: var(--card);
         }
         .slug-pill b { color: var(--text); font-weight: 500; }
 
         .theme-btn {
           width: 36px; height: 36px; border-radius: 50%;
-          border: 1px solid var(--border);
-          background: var(--bg2); cursor: pointer;
+          border: 1px solid var(--border); background: var(--bg2); cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           font-size: 1rem; transition: all 0.25s;
         }
@@ -174,36 +158,27 @@ export default function SlugPage() {
           to   { opacity:1; transform:translateY(0); }
         }
 
-        /* LOADING */
-        .loading {
-          display: flex; flex-direction: column;
-          align-items: center; gap: 1rem;
-        }
-
         .spinner {
           width: 32px; height: 32px;
-          border: 2px solid var(--border);
-          border-top-color: var(--accent);
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
+          border: 2px solid var(--border); border-top-color: var(--accent);
+          border-radius: 50%; animation: spin 0.7s linear infinite;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .loading {
+          display: flex; flex-direction: column; align-items: center; gap: 1rem;
+        }
         .loading-text {
           font-size: 0.7rem; color: var(--text-dim);
           letter-spacing: 0.18em; text-transform: uppercase;
         }
 
-        /* UPLOAD */
         .upload-zone {
           width: min(520px, 100%);
           display: flex; flex-direction: column;
           align-items: center; gap: 2.2rem;
-          margin: 0 auto;
+          margin: 0 auto; text-align: center;
         }
-
-        .upload-title { text-align: center; }
 
         .upload-title h2 {
           font-family: 'Syne', sans-serif;
@@ -211,31 +186,23 @@ export default function SlugPage() {
           font-weight: 800; letter-spacing: -0.03em;
           line-height: 1.1; color: var(--text);
         }
-
         .upload-title p {
           margin-top: 0.5rem; font-size: 0.75rem;
           color: var(--text-muted); letter-spacing: 0.04em;
         }
 
         .drop-zone {
-          width: 100%;
-          border: 1.5px dashed var(--border);
-          border-radius: 10px;
-          padding: 3.5rem 2rem;
+          width: 100%; border: 1.5px dashed var(--border);
+          border-radius: 10px; padding: 3.5rem 2rem;
           display: flex; flex-direction: column;
-          align-items: center; gap: 1.2rem;
-          cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
-          background: var(--card);
+          align-items: center; gap: 1.2rem; cursor: pointer;
+          transition: border-color 0.2s, background 0.2s; background: var(--card);
         }
-
         .drop-zone:hover, .drop-zone.drag {
-          border-color: var(--accent);
-          background: rgba(255,90,31,0.04);
+          border-color: var(--accent); background: rgba(255,90,31,0.04);
         }
 
         .drop-icon { font-size: 2.8rem; opacity: 0.5; }
-
         .drop-label {
           font-size: 0.78rem; color: var(--text-muted);
           letter-spacing: 0.04em; text-align: center; line-height: 1.9;
@@ -243,13 +210,10 @@ export default function SlugPage() {
         .drop-label b { color: var(--accent); font-weight: 400; }
 
         .upload-btn {
-          padding: 0.7rem 2rem;
-          background: var(--accent); border: none; border-radius: 4px;
-          cursor: pointer;
-          font-family: 'Syne', sans-serif;
-          font-size: 0.78rem; font-weight: 700;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: var(--accent-text);
+          padding: 0.7rem 2rem; background: var(--accent);
+          border: none; border-radius: 4px; cursor: pointer;
+          font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+          letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text);
           transition: background 0.2s, transform 0.1s;
         }
         .upload-btn:hover { background: var(--accent-hover); }
@@ -262,7 +226,6 @@ export default function SlugPage() {
           letter-spacing: 0.1em; text-transform: uppercase;
         }
 
-        /* IMAGE VIEW */
         .image-view {
           width: min(780px, 100%);
           display: flex; flex-direction: column;
@@ -271,56 +234,37 @@ export default function SlugPage() {
         }
 
         .img-frame {
-          width: 100%;
-          border-radius: 10px; overflow: hidden;
-          border: 1px solid var(--border);
-          background: var(--bg2);
+          width: 100%; border-radius: 10px; overflow: hidden;
+          border: 1px solid var(--border); background: var(--bg2);
           box-shadow: 0 32px 64px var(--glow), 0 8px 24px rgba(0,0,0,0.1);
         }
-
         .img-frame img {
           width: 100%; display: block;
           object-fit: contain; max-height: 68vh;
         }
 
         .timer-badge {
-          padding: 0.3rem 0.85rem;
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          font-size: 0.65rem; color: var(--text-muted);
+          padding: 0.3rem 0.85rem; border: 1px solid var(--border);
+          border-radius: 999px; font-size: 0.65rem; color: var(--text-muted);
           letter-spacing: 0.06em; background: var(--card);
         }
         .timer-badge span { color: var(--accent); }
 
         .actions {
-          display: flex; gap: 0.65rem;
-          flex-wrap: wrap; justify-content: center;
+          display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: center;
         }
 
         .btn {
           padding: 0.65rem 1.4rem; border-radius: 5px;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.72rem; letter-spacing: 0.08em;
-          cursor: pointer; transition: all 0.2s;
+          font-family: 'DM Mono', monospace; font-size: 0.72rem;
+          letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
           text-transform: uppercase; text-decoration: none;
           display: inline-flex; align-items: center;
         }
-
-        .btn-primary {
-          background: var(--accent); border: 1px solid var(--accent);
-          color: var(--accent-text);
-        }
+        .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-text); }
         .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-
-        .btn-success {
-          background: transparent; border: 1px solid var(--success);
-          color: var(--success);
-        }
-
-        .btn-ghost {
-          background: transparent; border: 1px solid var(--border);
-          color: var(--text-muted);
-        }
+        .btn-success { background: transparent; border: 1px solid var(--success); color: var(--success); }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
       `}</style>
 
@@ -387,9 +331,7 @@ export default function SlugPage() {
               <div className="img-frame">
                 <img src={imageUrl} alt={slug} />
               </div>
-              {timer && (
-                <div className="timer-badge">⏱ <span>{timer}</span></div>
-              )}
+              {timer && <div className="timer-badge">⏱ <span>{timer}</span></div>}
               <div className="actions">
                 <button className={`btn ${copied ? "btn-success" : "btn-primary"}`} onClick={copyLink}>
                   {copied ? "✓ Copied!" : "Copy Link"}
