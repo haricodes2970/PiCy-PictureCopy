@@ -45,7 +45,7 @@ export default function Home() {
           --accent-text: #fff;
           --card: rgba(0,0,0,0.03);
           --grid: rgba(0,0,0,0.05);
-          --glow: rgba(255,90,31,0.08);
+          --glow: rgba(255,90,31,0.07);
         }
 
         html, body {
@@ -112,6 +112,7 @@ export default function Home() {
           align-items: center;
           gap: 2.6rem;
           max-width: 560px; width: 100%;
+          margin: 0 auto;
           animation: riseUp 0.75s cubic-bezier(0.16,1,0.3,1) both;
         }
 
@@ -123,6 +124,7 @@ export default function Home() {
         .logo-block {
           display: flex; flex-direction: column;
           align-items: center; gap: 0.9rem;
+          width: 100%;
         }
 
         .mascot {
@@ -214,7 +216,8 @@ export default function Home() {
         .go-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .quick-slugs {
-          display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+          display: flex; gap: 0.5rem;
+          flex-wrap: wrap; justify-content: center;
         }
 
         .qs {

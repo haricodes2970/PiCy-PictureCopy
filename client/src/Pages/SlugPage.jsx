@@ -76,7 +76,6 @@ export default function SlugPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root[data-theme="dark"] {
@@ -90,7 +89,6 @@ export default function SlugPage() {
           --glow: rgba(255,90,31,0.10);
           --success: #4ade80;
         }
-
         :root[data-theme="light"] {
           --bg: #f5f0e8; --bg2: #ede8df;
           --border: rgba(0,0,0,0.09);
@@ -110,11 +108,7 @@ export default function SlugPage() {
           transition: background 0.35s, color 0.35s;
         }
 
-        .page {
-          min-height: 100vh;
-          display: flex; flex-direction: column;
-          position: relative;
-        }
+        .page { min-height: 100vh; display: flex; flex-direction: column; }
 
         .bg-grid {
           position: fixed; inset: 0;
@@ -140,20 +134,12 @@ export default function SlugPage() {
           font-weight: 800; font-size: 1.4rem;
           letter-spacing: -0.03em;
           cursor: pointer; color: var(--text);
-          text-decoration: none;
           display: flex; align-items: center; gap: 0.5rem;
         }
-
         .logo-sm span { color: var(--accent); }
+        .logo-sm img { width: 28px; height: 28px; object-fit: contain; }
 
-        .logo-sm img {
-          width: 28px; height: 28px;
-          object-fit: contain;
-        }
-
-        .topbar-right {
-          display: flex; align-items: center; gap: 0.75rem;
-        }
+        .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
 
         .slug-pill {
           padding: 0.38rem 1rem;
@@ -164,18 +150,15 @@ export default function SlugPage() {
           letter-spacing: 0.04em;
           background: var(--card);
         }
-
         .slug-pill b { color: var(--text); font-weight: 500; }
 
         .theme-btn {
           width: 36px; height: 36px; border-radius: 50%;
           border: 1px solid var(--border);
-          background: var(--bg2);
-          cursor: pointer;
+          background: var(--bg2); cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           font-size: 1rem; transition: all 0.25s;
         }
-
         .theme-btn:hover { border-color: var(--accent); transform: rotate(20deg); }
 
         .main {
@@ -217,6 +200,7 @@ export default function SlugPage() {
           width: min(520px, 100%);
           display: flex; flex-direction: column;
           align-items: center; gap: 2.2rem;
+          margin: 0 auto;
         }
 
         .upload-title { text-align: center; }
@@ -253,12 +237,9 @@ export default function SlugPage() {
         .drop-icon { font-size: 2.8rem; opacity: 0.5; }
 
         .drop-label {
-          font-size: 0.78rem;
-          color: var(--text-muted);
-          letter-spacing: 0.04em;
-          text-align: center; line-height: 1.9;
+          font-size: 0.78rem; color: var(--text-muted);
+          letter-spacing: 0.04em; text-align: center; line-height: 1.9;
         }
-
         .drop-label b { color: var(--accent); font-weight: 400; }
 
         .upload-btn {
@@ -271,7 +252,6 @@ export default function SlugPage() {
           color: var(--accent-text);
           transition: background 0.2s, transform 0.1s;
         }
-
         .upload-btn:hover { background: var(--accent-hover); }
         .upload-btn:active { transform: scale(0.97); }
         .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -287,6 +267,7 @@ export default function SlugPage() {
           width: min(780px, 100%);
           display: flex; flex-direction: column;
           align-items: center; gap: 1.4rem;
+          margin: 0 auto;
         }
 
         .img-frame {
@@ -294,7 +275,7 @@ export default function SlugPage() {
           border-radius: 10px; overflow: hidden;
           border: 1px solid var(--border);
           background: var(--bg2);
-          box-shadow: 0 32px 64px var(--glow), 0 8px 24px rgba(0,0,0,0.15);
+          box-shadow: 0 32px 64px var(--glow), 0 8px 24px rgba(0,0,0,0.1);
         }
 
         .img-frame img {
@@ -302,21 +283,13 @@ export default function SlugPage() {
           object-fit: contain; max-height: 68vh;
         }
 
-        .meta-row {
-          display: flex; align-items: center; gap: 1rem;
-          flex-wrap: wrap; justify-content: center;
-        }
-
         .timer-badge {
-          padding: 0.3rem 0.8rem;
+          padding: 0.3rem 0.85rem;
           border: 1px solid var(--border);
           border-radius: 999px;
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          letter-spacing: 0.06em;
-          background: var(--card);
+          font-size: 0.65rem; color: var(--text-muted);
+          letter-spacing: 0.06em; background: var(--card);
         }
-
         .timer-badge span { color: var(--accent); }
 
         .actions {
@@ -325,39 +298,30 @@ export default function SlugPage() {
         }
 
         .btn {
-          padding: 0.65rem 1.4rem;
-          border-radius: 5px;
+          padding: 0.65rem 1.4rem; border-radius: 5px;
           font-family: 'DM Mono', monospace;
-          font-size: 0.72rem;
-          letter-spacing: 0.08em;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-transform: uppercase;
-          text-decoration: none;
+          font-size: 0.72rem; letter-spacing: 0.08em;
+          cursor: pointer; transition: all 0.2s;
+          text-transform: uppercase; text-decoration: none;
           display: inline-flex; align-items: center;
         }
 
         .btn-primary {
-          background: var(--accent);
-          border: 1px solid var(--accent);
+          background: var(--accent); border: 1px solid var(--accent);
           color: var(--accent-text);
         }
-
         .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
         .btn-success {
-          background: transparent;
-          border: 1px solid var(--success);
+          background: transparent; border: 1px solid var(--success);
           color: var(--success);
         }
 
         .btn-ghost {
-          background: transparent;
-          border: 1px solid var(--border);
+          background: transparent; border: 1px solid var(--border);
           color: var(--text-muted);
         }
-
-        .btn-ghost:hover { border-color: var(--border-hover, rgba(255,255,255,0.2)); color: var(--text); }
+        .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
       `}</style>
 
       <div className="page">
@@ -365,7 +329,7 @@ export default function SlugPage() {
 
         <div className="topbar">
           <div className="logo-sm" onClick={() => navigate("/")}>
-            <img src="/logo.png" alt="" onError={e => e.target.style.display="none"} />
+            <img src="/logo.png" alt="" onError={e => e.target.style.display = "none"} />
             Pi<span>cy</span>
           </div>
           <div className="topbar-right">
@@ -398,7 +362,7 @@ export default function SlugPage() {
                 <div className="drop-icon">🖼️</div>
                 <div className="drop-label">
                   <b>Click to browse</b> or drag & drop<br />
-                  PNG · JPG · GIF · WEBP supported
+                  PNG · JPG · GIF · WEBP · Max 5MB
                 </div>
                 {uploading ? (
                   <div className="uploading-row">
@@ -423,9 +387,9 @@ export default function SlugPage() {
               <div className="img-frame">
                 <img src={imageUrl} alt={slug} />
               </div>
-              <div className="meta-row">
-                {timer && <div className="timer-badge">⏱ <span>{timer}</span></div>}
-              </div>
+              {timer && (
+                <div className="timer-badge">⏱ <span>{timer}</span></div>
+              )}
               <div className="actions">
                 <button className={`btn ${copied ? "btn-success" : "btn-primary"}`} onClick={copyLink}>
                   {copied ? "✓ Copied!" : "Copy Link"}
