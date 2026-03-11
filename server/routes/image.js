@@ -2,18 +2,46 @@ import express from "express";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 import Image from "../models/Image.js";
+import Stats from "../models/Stats.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
     else cb(new Error("Only image files allowed!"));
   }
 });
+
+// Helper — update stats
+const trackStat = async (type) => {
+  const today = new Date().toISOString().split("T")[0];
+  let stats = await Stats.findOne();
+  if (!stats) stats = new Stats();
+
+  if (type === "upload") {
+    stats.totalUploads += 1;
+    const day = stats.dailyStats.find(d => d.date === today);
+    if (day) day.uploads += 1;
+    else stats.dailyStats.push({ date: today, uploads: 1, visits: 0 });
+  }
+
+  if (type === "visit") {
+    stats.totalVisits += 1;
+    const day = stats.dailyStats.find(d => d.date === today);
+    if (day) day.visits += 1;
+    else stats.dailyStats.push({ date: today, visits: 1, uploads: 0 });
+  }
+
+  if (type === "expired") stats.totalExpired += 1;
+
+  // Keep only last 30 days
+  stats.dailyStats = stats.dailyStats.slice(-30);
+  await stats.save();
+};
 
 // POST /api/:slug — upload image
 router.post("/:slug", upload.single("image"), async (req, res) => {
@@ -41,6 +69,8 @@ router.post("/:slug", upload.single("image"), async (req, res) => {
       publicId: result.public_id,
     });
 
+    await trackStat("upload");
+
     res.status(201).json({
       imageUrl: image.imageUrl,
       slug: image.slug,
@@ -57,6 +87,8 @@ router.get("/:slug", async (req, res) => {
     const image = await Image.findOne({ slug: req.params.slug });
     if (!image) return res.status(404).json({ error: "No image found!" });
 
+    await trackStat("visit");
+
     res.json({
       imageUrl: image.imageUrl,
       slug: image.slug,
@@ -67,7 +99,7 @@ router.get("/:slug", async (req, res) => {
   }
 });
 
-// Error handler for multer
+// Error handler
 router.use((err, req, res, next) => {
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({ error: "File too large! Max size is 5MB." });

@@ -8,18 +8,12 @@ const imageSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
-  imageUrl: {
-    type: String,
-    required: true,
-  },
-  publicId: {
-    type: String,
-    required: true,
-  },
+  imageUrl: { type: String, required: true },
+  publicId: { type: String, required: true },
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400, // ⏱️ auto-delete after 24 hours (in seconds)
+    expires: 86400,
   },
 });
 
