@@ -120,6 +120,51 @@ router.put("/:slug/overwrite", upload.single("image"), async (req, res) => {
   }
 });
 
+// PUT /api/:slug/replace — replace everything (type, image, text)
+router.put("/:slug/replace", upload.single("image"), async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { type, text } = req.body;
+    const existing = await Image.findOne({ slug });
+    if (!existing) return res.status(404).json({ error: "Slug not found!" });
+
+    if (existing.publicId) await cloudinary.uploader.destroy(existing.publicId);
+
+    let imageUrl = null;
+    let publicId = null;
+
+    if ((type === "image" || type === "both") && req.file) {
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: "picy" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+    }
+
+    existing.type = type || "image";
+    existing.imageUrl = imageUrl;
+    existing.publicId = publicId;
+    existing.text = text || null;
+    await existing.save();
+
+    res.json({
+      slug: existing.slug,
+      type: existing.type,
+      imageUrl: existing.imageUrl,
+      text: existing.text,
+      expiresAt: existing.expiresAt,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/:slug/blank
 router.put("/:slug/blank", async (req, res) => {
   try {

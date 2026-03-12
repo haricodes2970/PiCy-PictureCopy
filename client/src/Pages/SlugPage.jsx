@@ -90,7 +90,7 @@ export default function SlugPage({ mode = "image" }) {
   const [timer, setTimer] = useState("");
 
   // Mode selection (for empty slug)
-  const [selectedMode, setSelectedMode] = useState(mode); // "image" | "text" | "both"
+  const [selectedMode, setSelectedMode] = useState(null); // "image" | "text" | "both"
 
   // Upload state
   const [uploading, setUploading] = useState(false);
@@ -137,6 +137,29 @@ export default function SlugPage({ mode = "image" }) {
       setEmpty(false);
     } catch (err) {
       alert(err.response?.data?.error || "Upload failed!");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleReplace = async () => {
+    if (!selectedMode) return;
+    if (selectedMode === "text" && !textInput.trim()) return alert("Please enter some text!");
+    if (selectedMode === "image" && !selectedFile) return alert("Please select an image!");
+    if (selectedMode === "both" && (!selectedFile || !textInput.trim())) return alert("Please add both image and text!");
+
+    const formData = new FormData();
+    formData.append("type", selectedMode);
+    if (selectedFile) formData.append("image", selectedFile);
+    if (textInput.trim()) formData.append("text", textInput.trim());
+
+    setUploading(true);
+    try {
+      const res = await axios.put(`${API}/${slug}/replace`, formData);
+      setData(res.data);
+      setEmpty(false);
+    } catch (err) {
+      alert(err.response?.data?.error || "Replace failed!");
     } finally {
       setUploading(false);
     }
@@ -570,8 +593,8 @@ export default function SlugPage({ mode = "image" }) {
                         </div>
                       ) : (
                         <>
-                          <button className="btn btn-primary" onClick={handleSubmit}>
-                            Save to picy.com/{slug} →
+                          <button className="btn btn-primary" onClick={empty ? handleSubmit : handleReplace}>
+                            {empty ? `Save to picy.com/${slug} →` : `Replace picy.com/${slug} →`}
                           </button>
                           <button className="btn-back" onClick={() => { setSelectedMode(null); setSelectedFile(null); setTextInput(""); }}>
                             ← Change mode
@@ -640,6 +663,13 @@ export default function SlugPage({ mode = "image" }) {
                   {data.imageUrl && (
                     <button className="btn btn-ghost" onClick={() => setShowOverwrite(true)}>🔁 Overwrite</button>
                   )}
+                  <button className="btn btn-ghost" onClick={() => {
+                    setData(null);
+                    setEmpty(true);
+                    setSelectedMode(null);
+                    setSelectedFile(null);
+                    setTextInput("");
+                  }}>🔄 Replace</button>
                   <button className="btn btn-ghost" onClick={() => navigate("/")}>← New Slug</button>
                 </div>
               ) : (
