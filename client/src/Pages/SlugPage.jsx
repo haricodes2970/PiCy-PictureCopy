@@ -13,6 +13,71 @@ function timeLeft(expiresAt) {
   return `${h}h ${m}m left`;
 }
 
+function TextEditor({ slug, initialText, isBoth }) {
+  const [text, setText] = useState(initialText || "");
+  const [saved, setSaved] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const saveTimer = useRef(null);
+
+  const handleChange = (e) => {
+    setText(e.target.value);
+    setSaved(false);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => autoSave(e.target.value), 1500);
+  };
+
+  const autoSave = async (value) => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/${slug}/text`, { text: value });
+      setSaved(true);
+    } catch (err) {
+      console.error("Save failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const copyText = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="text-frame" style={isBoth ? {} : { maxWidth: "780px", width: "100%", minHeight: "400px" }}>
+      <div className="text-frame-header">
+        <span className="text-frame-label">
+          📝 picy.com/{slug}{isBoth ? "" : "/text"}
+        </span>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <span style={{ fontSize: "0.6rem", color: saving ? "var(--accent)" : saved ? "var(--success)" : "var(--text-dim)", letterSpacing: "0.08em" }}>
+            {saving ? "⟳ saving..." : saved ? "✓ saved" : "● unsaved"}
+          </span>
+          <button
+            className={`btn ${copied ? "btn-success" : "btn-ghost"}`}
+            style={{ padding: "0.3rem 0.8rem", fontSize: "0.65rem" }}
+            onClick={copyText}>
+            {copied ? "✓ Copied!" : "Copy"}
+          </button>
+        </div>
+      </div>
+      <textarea
+        className="text-editor"
+        style={{ minHeight: isBoth ? "50vh" : "360px", borderRadius: "0 0 10px 10px", border: "none", borderTop: "1px solid var(--border)" }}
+        value={text}
+        onChange={handleChange}
+        placeholder="Start typing... changes save automatically"
+      />
+      <div style={{ padding: "0.4rem 1rem", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>{text.length} / 50,000</span>
+        <span style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>Auto-saves as you type</span>
+      </div>
+    </div>
+  );
+}
+
 export default function SlugPage({ mode = "image" }) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -33,7 +98,6 @@ export default function SlugPage({ mode = "image" }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [textInput, setTextInput] = useState("");
   const [copied, setCopied] = useState(false);
-  const [textCopied, setTextCopied] = useState(false);
   const [showOverwrite, setShowOverwrite] = useState(false);
   const [overwriting, setOverwriting] = useState(false);
   const [blanking, setBlanking] = useState(false);
@@ -111,13 +175,6 @@ export default function SlugPage({ mode = "image" }) {
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
-
-  const copyText = () => {
-    if (data?.text) {
-      navigator.clipboard.writeText(data.text);
-      setTextCopied(true); setTimeout(() => setTextCopied(false), 2000);
-    }
   };
 
   return (
@@ -541,17 +598,7 @@ export default function SlugPage({ mode = "image" }) {
 
               {/* TEXT ONLY */}
               {data.type === "text" && (
-                <div className="text-frame" style={{maxWidth:"780px", width:"100%", minHeight:"300px"}}>
-                  <div className="text-frame-header">
-                    <span className="text-frame-label">📝 picy.com/{slug}</span>
-                    <button className={`btn ${textCopied ? "btn-success" : "btn-ghost"}`}
-                      style={{padding:"0.3rem 0.8rem", fontSize:"0.65rem"}}
-                      onClick={copyText}>
-                      {textCopied ? "✓ Copied!" : "Copy text"}
-                    </button>
-                  </div>
-                  <div className="text-frame-body">{data.text}</div>
-                </div>
+                <TextEditor slug={slug} initialText={data.text} />
               )}
 
               {/* BOTH */}
@@ -560,17 +607,7 @@ export default function SlugPage({ mode = "image" }) {
                   <div className="img-frame">
                     <img src={data.imageUrl} alt={slug} />
                   </div>
-                  <div className="text-frame">
-                    <div className="text-frame-header">
-                      <span className="text-frame-label">📝 Text</span>
-                      <button className={`btn ${textCopied ? "btn-success" : "btn-ghost"}`}
-                        style={{padding:"0.3rem 0.8rem", fontSize:"0.65rem"}}
-                        onClick={copyText}>
-                        {textCopied ? "✓ Copied!" : "Copy"}
-                      </button>
-                    </div>
-                    <div className="text-frame-body">{data.text}</div>
-                  </div>
+                  <TextEditor slug={slug} initialText={data.text} isBoth />
                 </div>
               )}
 

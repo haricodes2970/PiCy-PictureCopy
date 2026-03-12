@@ -19,8 +19,23 @@ const imageSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400,
   },
+  expiresAt: {
+    type: Date,
+  },
+});
+
+imageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+imageSchema.pre("save", function (next) {
+  if (!this.expiresAt) {
+    if (this.type === "text") {
+      this.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 1 week
+    } else {
+      this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    }
+  }
+  next();
 });
 
 export default mongoose.model("Image", imageSchema);

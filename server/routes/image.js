@@ -80,7 +80,7 @@ router.post("/:slug", upload.single("image"), async (req, res) => {
       type: item.type,
       imageUrl: item.imageUrl,
       text: item.text,
-      expiresAt: new Date(item.createdAt.getTime() + 86400000),
+      expiresAt: item.expiresAt,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -180,7 +180,7 @@ router.get("/:slug", async (req, res) => {
       type: image.type,
       imageUrl: image.imageUrl,
       text: image.text,
-      expiresAt: new Date(image.createdAt.getTime() + 86400000),
+      expiresAt: image.expiresAt,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
