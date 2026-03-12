@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import AdBanner from "../components/AdBanner";
 
 export default function Home() {
   const [slug, setSlug] = useState("");
