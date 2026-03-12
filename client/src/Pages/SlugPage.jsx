@@ -13,7 +13,7 @@ function timeLeft(expiresAt) {
   return `${h}h ${m}m left`;
 }
 
-function TextEditor({ slug, initialText, isBoth }) {
+function TextEditor({ slug, fullSlug, initialText, isBoth }) {
   const [text, setText] = useState(initialText || "");
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,7 +30,7 @@ function TextEditor({ slug, initialText, isBoth }) {
   const autoSave = async (value) => {
     setSaving(true);
     try {
-      await axios.put(`${API}/${slug}/text`, { text: value });
+      await axios.put(`${API}/${fullSlug}/text`, { text: value });
       setSaved(true);
     } catch (err) {
       console.error("Save failed", err);
@@ -80,6 +80,7 @@ function TextEditor({ slug, initialText, isBoth }) {
 
 export default function SlugPage({ mode = "image" }) {
   const { slug } = useParams();
+  const fullSlug = mode === "image" ? `${slug}-image` : mode === "text" ? `${slug}-text` : `${slug}-both`;
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
 
@@ -106,7 +107,7 @@ export default function SlugPage({ mode = "image" }) {
   const overwriteRef = useRef();
 
   useEffect(() => {
-    axios.get(`${API}/${slug}`)
+    axios.get(`${API}/${fullSlug}`)
       .then(res => setData(res.data))
       .catch(() => setEmpty(true))
       .finally(() => setLoading(false));
@@ -132,7 +133,7 @@ export default function SlugPage({ mode = "image" }) {
 
     setUploading(true);
     try {
-      const res = await axios.post(`${API}/${slug}`, formData);
+      const res = await axios.post(`${API}/${fullSlug}`, formData);
       setData(res.data);
       setEmpty(false);
     } catch (err) {
@@ -155,7 +156,7 @@ export default function SlugPage({ mode = "image" }) {
 
     setUploading(true);
     try {
-      const res = await axios.put(`${API}/${slug}/replace`, formData);
+      const res = await axios.put(`${API}/${fullSlug}/replace`, formData);
       setData(res.data);
       setEmpty(false);
     } catch (err) {
@@ -171,7 +172,7 @@ export default function SlugPage({ mode = "image" }) {
     formData.append("image", file);
     setOverwriting(true);
     try {
-      const res = await axios.put(`${API}/${slug}/overwrite`, formData);
+      const res = await axios.put(`${API}/${fullSlug}/overwrite`, formData);
       setData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
       setShowOverwrite(false);
     } catch (err) {
@@ -185,7 +186,7 @@ export default function SlugPage({ mode = "image" }) {
     if (!window.confirm("Replace image with a blank? This cannot be undone.")) return;
     setBlanking(true);
     try {
-      const res = await axios.put(`${API}/${slug}/blank`);
+      const res = await axios.put(`${API}/${fullSlug}/blank`);
       setData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
       setShowOverwrite(false);
     } catch (err) {
@@ -621,7 +622,7 @@ export default function SlugPage({ mode = "image" }) {
 
               {/* TEXT ONLY */}
               {data.type === "text" && (
-                <TextEditor slug={slug} initialText={data.text} />
+                <TextEditor slug={slug} fullSlug={fullSlug} initialText={data.text} />
               )}
 
               {/* BOTH */}
@@ -630,7 +631,7 @@ export default function SlugPage({ mode = "image" }) {
                   <div className="img-frame">
                     <img src={data.imageUrl} alt={slug} />
                   </div>
-                  <TextEditor slug={slug} initialText={data.text} isBoth />
+                  <TextEditor slug={slug} fullSlug={fullSlug} initialText={data.text} isBoth />
                 </div>
               )}
 
