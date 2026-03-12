@@ -13,7 +13,7 @@ function timeLeft(expiresAt) {
   return `${h}h ${m}m left`;
 }
 
-export default function SlugPage() {
+export default function SlugPage({ mode = "image" }) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
@@ -25,7 +25,7 @@ export default function SlugPage() {
   const [timer, setTimer] = useState("");
 
   // Mode selection (for empty slug)
-  const [selectedMode, setSelectedMode] = useState(null); // "image" | "text" | "both"
+  const [selectedMode, setSelectedMode] = useState(mode); // "image" | "text" | "both"
 
   // Upload state
   const [uploading, setUploading] = useState(false);

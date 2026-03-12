@@ -11,7 +11,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/xk92-admin-picy" element={<Admin />} />
-        <Route path="/:slug" element={<SlugPage />} />
+        <Route path="/:slug" element={<SlugPage mode="image" />} />
+        <Route path="/:slug/text" element={<SlugPage mode="text" />} />
+        <Route path="/:slug/both" element={<SlugPage mode="both" />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ThemeProvider>
