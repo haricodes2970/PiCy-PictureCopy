@@ -584,8 +584,21 @@ export default function SlugPage() {
                     {copied ? "✓ Copied!" : "Copy Link"}
                   </button>
                   {data.imageUrl && (
-                    <a href={data.imageUrl} download target="_blank" rel="noreferrer"
-                      className="btn btn-ghost">Download</a>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={async () => {
+                        const res = await fetch(data.imageUrl);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `picy-${slug}.${blob.type.split("/")[1] || "jpg"}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      Download
+                    </button>
                   )}
                   {data.imageUrl && (
                     <button className="btn btn-ghost" onClick={() => setShowOverwrite(true)}>🔁 Overwrite</button>
