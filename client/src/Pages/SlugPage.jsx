@@ -17,43 +17,59 @@ export default function SlugPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
-  const [imageUrl, setImageUrl] = useState(null);
-  const [expiresAt, setExpiresAt] = useState(null);
+
+  // Data state
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [empty, setEmpty] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [timer, setTimer] = useState("");
+
+  // Mode selection (for empty slug)
+  const [selectedMode, setSelectedMode] = useState(null); // "image" | "text" | "both"
+
+  // Upload state
+  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [textInput, setTextInput] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [textCopied, setTextCopied] = useState(false);
   const [showOverwrite, setShowOverwrite] = useState(false);
   const [overwriting, setOverwriting] = useState(false);
   const [blanking, setBlanking] = useState(false);
+
   const fileRef = useRef();
   const overwriteRef = useRef();
 
   useEffect(() => {
     axios.get(`${API}/${slug}`)
-      .then(res => { setImageUrl(res.data.imageUrl); setExpiresAt(res.data.expiresAt); })
+      .then(res => setData(res.data))
       .catch(() => setEmpty(true))
       .finally(() => setLoading(false));
   }, [slug]);
 
   useEffect(() => {
-    if (!expiresAt) return;
-    setTimer(timeLeft(expiresAt));
-    const id = setInterval(() => setTimer(timeLeft(expiresAt)), 30000);
+    if (!data?.expiresAt) return;
+    setTimer(timeLeft(data.expiresAt));
+    const id = setInterval(() => setTimer(timeLeft(data.expiresAt)), 30000);
     return () => clearInterval(id);
-  }, [expiresAt]);
+  }, [data?.expiresAt]);
 
-  const uploadFile = async (file) => {
-    if (!file?.type.startsWith("image/")) return alert("Please upload an image!");
+  const handleSubmit = async () => {
+    if (!selectedMode) return;
+    if (selectedMode === "text" && !textInput.trim()) return alert("Please enter some text!");
+    if (selectedMode === "image" && !selectedFile) return alert("Please select an image!");
+    if (selectedMode === "both" && (!selectedFile || !textInput.trim())) return alert("Please add both image and text!");
+
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("type", selectedMode);
+    if (selectedFile) formData.append("image", selectedFile);
+    if (textInput.trim()) formData.append("text", textInput.trim());
+
     setUploading(true);
     try {
       const res = await axios.post(`${API}/${slug}`, formData);
-      setImageUrl(res.data.imageUrl);
-      setExpiresAt(res.data.expiresAt);
+      setData(res.data);
       setEmpty(false);
     } catch (err) {
       alert(err.response?.data?.error || "Upload failed!");
@@ -69,7 +85,7 @@ export default function SlugPage() {
     setOverwriting(true);
     try {
       const res = await axios.put(`${API}/${slug}/overwrite`, formData);
-      setImageUrl(res.data.imageUrl);
+      setData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
       setShowOverwrite(false);
     } catch (err) {
       alert(err.response?.data?.error || "Overwrite failed!");
@@ -83,24 +99,25 @@ export default function SlugPage() {
     setBlanking(true);
     try {
       const res = await axios.put(`${API}/${slug}/blank`);
-      setImageUrl(res.data.imageUrl);
+      setData(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
       setShowOverwrite(false);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to clear image!");
+      alert(err.response?.data?.error || "Failed!");
     } finally {
       setBlanking(false);
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault(); setDragging(false);
-    uploadFile(e.dataTransfer.files[0]);
-  };
-
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyText = () => {
+    if (data?.text) {
+      navigator.clipboard.writeText(data.text);
+      setTextCopied(true); setTimeout(() => setTextCopied(false), 2000);
+    }
   };
 
   return (
@@ -110,7 +127,7 @@ export default function SlugPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root[data-theme="dark"] {
-          --bg: #0c0c0c; --bg2: #161616;
+          --bg: #0c0c0c; --bg2: #161616; --bg3: #1e1e1e;
           --border: rgba(255,255,255,0.08);
           --text: #f0ece4; --text-muted: rgba(240,236,228,0.38);
           --text-dim: rgba(240,236,228,0.16);
@@ -119,7 +136,7 @@ export default function SlugPage() {
           --glow: rgba(255,90,31,0.10); --success: #4ade80; --red: #f87171;
         }
         :root[data-theme="light"] {
-          --bg: #f5f0e8; --bg2: #ede8df;
+          --bg: #f5f0e8; --bg2: #ede8df; --bg3: #e6e0d6;
           --border: rgba(0,0,0,0.09);
           --text: #1a1a1a; --text-muted: rgba(26,26,26,0.48);
           --text-dim: rgba(26,26,26,0.22);
@@ -167,7 +184,7 @@ export default function SlugPage() {
         .slug-pill {
           padding: 0.38rem 1rem; border: 1px solid var(--border);
           border-radius: 999px; font-size: 0.72rem;
-          color: var(--text-muted); letter-spacing: 0.04em; background: var(--card);
+          color: var(--text-muted); background: var(--card);
         }
         .slug-pill b { color: var(--text); font-weight: 500; }
 
@@ -180,10 +197,8 @@ export default function SlugPage() {
         .theme-btn:hover { border-color: var(--accent); transform: rotate(20deg); }
 
         .main {
-          flex: 1; display: flex;
-          align-items: center; justify-content: center;
-          padding: 3rem 2rem;
-          position: relative; z-index: 1;
+          flex: 1; display: flex; align-items: center; justify-content: center;
+          padding: 3rem 2rem; position: relative; z-index: 1;
           animation: fadeUp 0.5s ease both;
         }
 
@@ -202,56 +217,144 @@ export default function SlugPage() {
         .loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
         .loading-text { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
 
-        .upload-zone {
-          width: min(520px, 100%); margin: 0 auto;
-          display: flex; flex-direction: column;
-          align-items: center; gap: 2.2rem; text-align: center;
+        /* MODE SELECTOR */
+        .mode-wrap {
+          width: min(600px, 100%); margin: 0 auto;
+          display: flex; flex-direction: column; align-items: center; gap: 2.5rem;
         }
 
-        .upload-title h2 {
+        .mode-title { text-align: center; }
+        .mode-title h2 {
           font-family: 'Syne', sans-serif;
           font-size: clamp(1.8rem, 5vw, 2.6rem);
-          font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+          font-weight: 800; letter-spacing: -0.03em;
         }
-        .upload-title p { margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+        .mode-title p { margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+
+        .mode-cards {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; width: 100%;
+        }
+
+        .mode-card {
+          padding: 1.8rem 1rem; border: 1.5px solid var(--border);
+          border-radius: 10px; background: var(--card); cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+          transition: all 0.2s; text-align: center;
+        }
+        .mode-card:hover { border-color: var(--accent); background: rgba(255,90,31,0.04); transform: translateY(-2px); }
+        .mode-card.active { border-color: var(--accent); background: rgba(255,90,31,0.08); }
+
+        .mode-icon { font-size: 2rem; }
+        .mode-label {
+          font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+        }
+        .mode-desc { font-size: 0.62rem; color: var(--text-muted); line-height: 1.6; }
+
+        /* UPLOAD FORM */
+        .upload-form {
+          width: 100%; display: flex; flex-direction: column; gap: 1.2rem;
+        }
 
         .drop-zone {
           width: 100%; border: 1.5px dashed var(--border); border-radius: 10px;
-          padding: 3.5rem 2rem; display: flex; flex-direction: column;
-          align-items: center; gap: 1.2rem; cursor: pointer;
+          padding: 2.5rem 2rem; display: flex; flex-direction: column;
+          align-items: center; gap: 1rem; cursor: pointer;
           transition: border-color 0.2s, background 0.2s; background: var(--card);
         }
         .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(255,90,31,0.04); }
-        .drop-icon { font-size: 2.8rem; opacity: 0.5; }
-        .drop-label { font-size: 0.78rem; color: var(--text-muted); text-align: center; line-height: 1.9; }
+        .drop-zone.has-file { border-color: var(--success); background: rgba(74,222,128,0.04); border-style: solid; }
+        .drop-icon { font-size: 2rem; opacity: 0.5; }
+        .drop-label { font-size: 0.75rem; color: var(--text-muted); text-align: center; line-height: 1.9; }
         .drop-label b { color: var(--accent); font-weight: 400; }
+        .file-name { font-size: 0.72rem; color: var(--success); letter-spacing: 0.04em; }
 
-        .upload-btn {
-          padding: 0.7rem 2rem; background: var(--accent); border: none; border-radius: 4px;
-          cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
-          letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text);
-          transition: background 0.2s, transform 0.1s;
+        .text-editor {
+          width: 100%; min-height: 160px; padding: 1rem;
+          background: var(--bg2); border: 1.5px solid var(--border);
+          border-radius: 8px; outline: none; resize: vertical;
+          font-family: 'DM Mono', monospace; font-size: 0.88rem;
+          color: var(--text); caret-color: var(--accent);
+          transition: border-color 0.2s;
+          line-height: 1.7;
         }
-        .upload-btn:hover { background: var(--accent-hover); }
-        .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .text-editor:focus { border-color: var(--accent); }
+        .text-editor::placeholder { color: var(--text-dim); }
 
-        .uploading-row {
-          display: flex; align-items: center; gap: 0.6rem;
-          font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+        .submit-row {
+          display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
         }
 
-        /* IMAGE VIEW */
-        .image-view {
-          width: min(780px, 100%); margin: 0 auto;
-          display: flex; flex-direction: column; align-items: center; gap: 1.4rem;
+        /* BUTTONS */
+        .btn {
+          padding: 0.7rem 1.6rem; border-radius: 5px;
+          font-family: 'DM Mono', monospace; font-size: 0.72rem;
+          letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
+          text-transform: uppercase; text-decoration: none;
+          display: inline-flex; align-items: center; gap: 0.4rem; border: none;
+        }
+        .btn-primary { background: var(--accent); color: var(--accent-text); border: 1px solid var(--accent); }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-success { background: transparent; border: 1px solid var(--success); color: var(--success); }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+        .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+        .btn-danger:hover { background: rgba(248,113,113,0.08); }
+        .btn-back { background: transparent; border: none; color: var(--text-muted); font-size: 0.68rem; cursor: pointer; padding: 0.4rem 0; }
+        .btn-back:hover { color: var(--accent); }
+
+        /* CONTENT VIEW */
+        .content-view {
+          width: min(900px, 100%); margin: 0 auto;
+          display: flex; flex-direction: column; gap: 1.4rem; align-items: center;
+        }
+
+        /* BOTH MODE — side by side on desktop, stacked on mobile */
+        .both-layout {
+          width: 100%; display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.2rem;
+        }
+
+        @media (max-width: 700px) {
+          .both-layout { grid-template-columns: 1fr; }
+          .mode-cards { grid-template-columns: 1fr; }
+          .slug-pill { display: none; }
         }
 
         .img-frame {
           width: 100%; border-radius: 10px; overflow: hidden;
           border: 1px solid var(--border); background: var(--bg2);
-          box-shadow: 0 32px 64px var(--glow), 0 8px 24px rgba(0,0,0,0.1);
+          box-shadow: 0 16px 40px var(--glow);
         }
-        .img-frame img { width: 100%; display: block; object-fit: contain; max-height: 68vh; }
+        .img-frame img { width: 100%; display: block; object-fit: contain; max-height: 60vh; }
+
+        .text-frame {
+          width: 100%; border-radius: 10px;
+          border: 1px solid var(--border); background: var(--bg2);
+          display: flex; flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 16px 40px rgba(0,0,0,0.06);
+        }
+
+        .text-frame-header {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: space-between;
+          background: var(--bg3);
+        }
+
+        .text-frame-label {
+          font-size: 0.62rem; letter-spacing: 0.14em;
+          text-transform: uppercase; color: var(--text-muted);
+        }
+
+        .text-frame-body {
+          padding: 1.2rem; font-size: 0.88rem; line-height: 1.8;
+          color: var(--text); white-space: pre-wrap; word-break: break-word;
+          overflow-y: auto; max-height: 60vh; flex: 1;
+        }
 
         .timer-badge {
           padding: 0.3rem 0.85rem; border: 1px solid var(--border);
@@ -259,76 +362,50 @@ export default function SlugPage() {
         }
         .timer-badge span { color: var(--accent); }
 
-        /* ACTIONS */
         .actions { display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: center; }
-
-        .btn {
-          padding: 0.65rem 1.4rem; border-radius: 5px;
-          font-family: 'DM Mono', monospace; font-size: 0.72rem;
-          letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
-          text-transform: uppercase; text-decoration: none;
-          display: inline-flex; align-items: center; gap: 0.4rem;
-        }
-        .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-text); }
-        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-        .btn-success { background: transparent; border: 1px solid var(--success); color: var(--success); }
-        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
-        .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
-        .btn-danger:hover { background: rgba(248,113,113,0.08); }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* OVERWRITE PANEL */
         .overwrite-panel {
           width: 100%; border: 1.5px dashed var(--border);
-          border-radius: 10px; padding: 1.8rem;
-          background: var(--card);
+          border-radius: 10px; padding: 1.8rem; background: var(--card);
           animation: fadeUp 0.3s ease both;
         }
-
         .overwrite-title {
           font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
-          letter-spacing: -0.01em; margin-bottom: 1.2rem; text-align: center;
-          color: var(--text);
+          margin-bottom: 1.2rem; text-align: center;
         }
-
-        .overwrite-options {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
-        }
-
+        .overwrite-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
         .overwrite-option {
-          padding: 1.2rem 1rem; border: 1px solid var(--border);
-          border-radius: 8px; background: var(--bg2); cursor: pointer;
+          padding: 1.2rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+          background: var(--bg2); cursor: pointer;
           display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
           transition: all 0.2s; text-align: center;
         }
         .overwrite-option:hover { border-color: var(--accent); background: rgba(255,90,31,0.05); }
         .overwrite-option:disabled { opacity: 0.4; cursor: not-allowed; }
-
         .option-icon { font-size: 1.8rem; }
-
         .option-label {
           font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
-          letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+          letter-spacing: 0.06em; text-transform: uppercase;
         }
-
         .option-desc { font-size: 0.62rem; color: var(--text-muted); line-height: 1.6; }
-
-        .option-danger { border-color: rgba(248,113,113,0.2); }
         .option-danger:hover { border-color: var(--red); background: rgba(248,113,113,0.05); }
-
         .overwrite-cancel {
           margin-top: 0.75rem; width: 100%; padding: 0.6rem;
           background: transparent; border: none; cursor: pointer;
           font-family: 'DM Mono', monospace; font-size: 0.68rem;
           color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase;
-          transition: color 0.2s;
         }
         .overwrite-cancel:hover { color: var(--text-muted); }
 
-        @media (max-width: 480px) {
-          .overwrite-options { grid-template-columns: 1fr; }
-          .slug-pill { display: none; }
+        .uploading-row {
+          display: flex; align-items: center; gap: 0.6rem;
+          font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+        }
+
+        .char-count {
+          font-size: 0.62rem; color: var(--text-dim);
+          text-align: right; letter-spacing: 0.04em;
         }
       `}</style>
 
@@ -347,6 +424,8 @@ export default function SlugPage() {
         </div>
 
         <div className="main">
+
+          {/* LOADING */}
           {loading && (
             <div className="loading">
               <div className="spinner" />
@@ -354,94 +433,189 @@ export default function SlugPage() {
             </div>
           )}
 
+          {/* EMPTY — MODE SELECTOR */}
           {!loading && empty && (
-            <div className="upload-zone">
-              <div className="upload-title">
-                <h2>Drop your image.</h2>
-                <p>This spot is unclaimed — make it yours.</p>
-              </div>
-              <div
-                className={`drop-zone ${dragging ? "drag" : ""}`}
-                onClick={() => fileRef.current.click()}
-                onDragOver={e => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-              >
-                <div className="drop-icon">🖼️</div>
-                <div className="drop-label">
-                  <b>Click to browse</b> or drag & drop<br />
-                  PNG · JPG · GIF · WEBP · Max 5MB
-                </div>
-                {uploading ? (
-                  <div className="uploading-row">
-                    <div className="spinner" style={{width:18,height:18}} /> Uploading...
+            <div className="mode-wrap">
+              {!selectedMode ? (
+                <>
+                  <div className="mode-title">
+                    <h2>What are you sharing?</h2>
+                    <p>Pick a mode to get started at picy.com/{slug}</p>
                   </div>
-                ) : (
-                  <button className="upload-btn"
-                    onClick={e => { e.stopPropagation(); fileRef.current.click(); }}>
-                    Choose File
-                  </button>
-                )}
-              </div>
-              <input ref={fileRef} type="file" accept="image/*"
-                style={{display:"none"}} onChange={e => uploadFile(e.target.files[0])} />
+                  <div className="mode-cards">
+                    <div className="mode-card" onClick={() => setSelectedMode("image")}>
+                      <div className="mode-icon">🖼️</div>
+                      <div className="mode-label">Image</div>
+                      <div className="mode-desc">Upload any image file up to 5MB</div>
+                    </div>
+                    <div className="mode-card" onClick={() => setSelectedMode("text")}>
+                      <div className="mode-icon">📝</div>
+                      <div className="mode-label">Text</div>
+                      <div className="mode-desc">Share text, code, or notes</div>
+                    </div>
+                    <div className="mode-card" onClick={() => setSelectedMode("both")}>
+                      <div className="mode-icon">✨</div>
+                      <div className="mode-label">Both</div>
+                      <div className="mode-desc">Image with text together</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mode-title">
+                    <h2>{selectedMode === "image" ? "🖼️ Upload Image" : selectedMode === "text" ? "📝 Share Text" : "✨ Image + Text"}</h2>
+                    <p>This will be saved at picy.com/{slug}</p>
+                  </div>
+
+                  <div className="upload-form">
+                    {/* Image upload */}
+                    {(selectedMode === "image" || selectedMode === "both") && (
+                      <div
+                        className={`drop-zone ${dragging ? "drag" : ""} ${selectedFile ? "has-file" : ""}`}
+                        onClick={() => fileRef.current.click()}
+                        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                        onDragLeave={() => setDragging(false)}
+                        onDrop={e => { e.preventDefault(); setDragging(false); setSelectedFile(e.dataTransfer.files[0]); }}
+                      >
+                        <div className="drop-icon">{selectedFile ? "✅" : "🖼️"}</div>
+                        {selectedFile ? (
+                          <div className="file-name">✓ {selectedFile.name}</div>
+                        ) : (
+                          <div className="drop-label">
+                            <b>Click to browse</b> or drag & drop<br />
+                            PNG · JPG · GIF · WEBP · Max 5MB
+                          </div>
+                        )}
+                        <input ref={fileRef} type="file" accept="image/*"
+                          style={{display:"none"}}
+                          onChange={e => setSelectedFile(e.target.files[0])} />
+                      </div>
+                    )}
+
+                    {/* Text input */}
+                    {(selectedMode === "text" || selectedMode === "both") && (
+                      <>
+                        <textarea
+                          className="text-editor"
+                          placeholder="Type or paste your text here..."
+                          value={textInput}
+                          onChange={e => setTextInput(e.target.value)}
+                          maxLength={50000}
+                        />
+                        <div className="char-count">{textInput.length} / 50,000</div>
+                      </>
+                    )}
+
+                    <div className="submit-row">
+                      {uploading ? (
+                        <div className="uploading-row">
+                          <div className="spinner" style={{width:18,height:18}} /> Saving...
+                        </div>
+                      ) : (
+                        <>
+                          <button className="btn btn-primary" onClick={handleSubmit}>
+                            Save to picy.com/{slug} →
+                          </button>
+                          <button className="btn-back" onClick={() => { setSelectedMode(null); setSelectedFile(null); setTextInput(""); }}>
+                            ← Change mode
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {!loading && imageUrl && (
-            <div className="image-view">
-              <div className="img-frame">
-                <img src={imageUrl} alt={slug} />
-              </div>
+          {/* CONTENT VIEW */}
+          {!loading && data && (
+            <div className="content-view">
 
+              {/* IMAGE ONLY */}
+              {data.type === "image" && (
+                <div className="img-frame" style={{maxWidth:"780px", width:"100%"}}>
+                  <img src={data.imageUrl} alt={slug} />
+                </div>
+              )}
+
+              {/* TEXT ONLY */}
+              {data.type === "text" && (
+                <div className="text-frame" style={{maxWidth:"780px", width:"100%", minHeight:"300px"}}>
+                  <div className="text-frame-header">
+                    <span className="text-frame-label">📝 picy.com/{slug}</span>
+                    <button className={`btn ${textCopied ? "btn-success" : "btn-ghost"}`}
+                      style={{padding:"0.3rem 0.8rem", fontSize:"0.65rem"}}
+                      onClick={copyText}>
+                      {textCopied ? "✓ Copied!" : "Copy text"}
+                    </button>
+                  </div>
+                  <div className="text-frame-body">{data.text}</div>
+                </div>
+              )}
+
+              {/* BOTH */}
+              {data.type === "both" && (
+                <div className="both-layout">
+                  <div className="img-frame">
+                    <img src={data.imageUrl} alt={slug} />
+                  </div>
+                  <div className="text-frame">
+                    <div className="text-frame-header">
+                      <span className="text-frame-label">📝 Text</span>
+                      <button className={`btn ${textCopied ? "btn-success" : "btn-ghost"}`}
+                        style={{padding:"0.3rem 0.8rem", fontSize:"0.65rem"}}
+                        onClick={copyText}>
+                        {textCopied ? "✓ Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <div className="text-frame-body">{data.text}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Timer */}
               {timer && <div className="timer-badge">⏱ <span>{timer}</span></div>}
 
+              {/* Actions */}
               {!showOverwrite ? (
                 <div className="actions">
                   <button className={`btn ${copied ? "btn-success" : "btn-primary"}`} onClick={copyLink}>
                     {copied ? "✓ Copied!" : "Copy Link"}
                   </button>
-                  <a href={imageUrl} download target="_blank" rel="noreferrer"
-                    className="btn btn-ghost">Download</a>
-                  <button className="btn btn-ghost"
-                    onClick={() => setShowOverwrite(true)}>
-                    🔁 Overwrite
-                  </button>
+                  {data.imageUrl && (
+                    <a href={data.imageUrl} download target="_blank" rel="noreferrer"
+                      className="btn btn-ghost">Download</a>
+                  )}
+                  {data.imageUrl && (
+                    <button className="btn btn-ghost" onClick={() => setShowOverwrite(true)}>🔁 Overwrite</button>
+                  )}
                   <button className="btn btn-ghost" onClick={() => navigate("/")}>← New Slug</button>
                 </div>
               ) : (
                 <div className="overwrite-panel">
                   <div className="overwrite-title">🔒 Replace this image</div>
                   <div className="overwrite-options">
-
-                    {/* New image option */}
-                    <button className="overwrite-option"
-                      disabled={overwriting || blanking}
+                    <button className="overwrite-option" disabled={overwriting || blanking}
                       onClick={() => overwriteRef.current.click()}>
                       <div className="option-icon">🖼️</div>
                       <div className="option-label">New Image</div>
-                      <div className="option-desc">Replace with a<br />different image</div>
+                      <div className="option-desc">Replace with a different image</div>
                       {overwriting && <div className="uploading-row" style={{fontSize:"0.65rem"}}>
                         <div className="spinner" style={{width:14,height:14}} /> Replacing...
                       </div>}
                     </button>
-
-                    {/* Blank image option */}
-                    <button className="overwrite-option option-danger"
-                      disabled={overwriting || blanking}
+                    <button className="overwrite-option option-danger" disabled={overwriting || blanking}
                       onClick={blankImage}>
                       <div className="option-icon">🗑️</div>
                       <div className="option-label">Clear Image</div>
-                      <div className="option-desc">Replace with a<br />tiny blank pixel</div>
+                      <div className="option-desc">Replace with a tiny blank pixel</div>
                       {blanking && <div className="uploading-row" style={{fontSize:"0.65rem"}}>
                         <div className="spinner" style={{width:14,height:14}} /> Clearing...
                       </div>}
                     </button>
-
                   </div>
-                  <button className="overwrite-cancel" onClick={() => setShowOverwrite(false)}>
-                    ✕ Cancel
-                  </button>
+                  <button className="overwrite-cancel" onClick={() => setShowOverwrite(false)}>✕ Cancel</button>
                 </div>
               )}
 
@@ -449,6 +623,7 @@ export default function SlugPage() {
                 style={{display:"none"}} onChange={e => overwriteFile(e.target.files[0])} />
             </div>
           )}
+
         </div>
       </div>
     </>

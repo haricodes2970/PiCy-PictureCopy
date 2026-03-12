@@ -37,45 +37,64 @@ const trackStat = async (type) => {
   await stats.save();
 };
 
+// POST /api/:slug — upload image, text, or both
 router.post("/:slug", upload.single("image"), async (req, res) => {
   try {
     const { slug } = req.params;
+    const { type, text } = req.body;
+
     const existing = await Image.findOne({ slug });
     if (existing) {
       return res.status(400).json({ error: "This URL is already taken!" });
     }
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "picy" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      ).end(req.file.buffer);
-    });
-    const image = await Image.create({
+
+    let imageUrl = null;
+    let publicId = null;
+
+    if ((type === "image" || type === "both") && req.file) {
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: "picy" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+    }
+
+    const item = await Image.create({
       slug,
-      imageUrl: result.secure_url,
-      publicId: result.public_id,
+      type: type || "image",
+      imageUrl,
+      publicId,
+      text: text || null,
     });
+
     await trackStat("upload");
+
     res.status(201).json({
-      imageUrl: image.imageUrl,
-      slug: image.slug,
-      expiresAt: new Date(image.createdAt.getTime() + 86400000),
+      slug: item.slug,
+      type: item.type,
+      imageUrl: item.imageUrl,
+      text: item.text,
+      expiresAt: new Date(item.createdAt.getTime() + 86400000),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// PUT /api/:slug/overwrite
 router.put("/:slug/overwrite", upload.single("image"), async (req, res) => {
   try {
     const { slug } = req.params;
     const existing = await Image.findOne({ slug });
     if (!existing) return res.status(404).json({ error: "Slug not found!" });
 
-    await cloudinary.uploader.destroy(existing.publicId);
+    if (existing.publicId) await cloudinary.uploader.destroy(existing.publicId);
 
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
@@ -95,20 +114,20 @@ router.put("/:slug/overwrite", upload.single("image"), async (req, res) => {
       imageUrl: existing.imageUrl,
       slug: existing.slug,
       expiresAt: new Date(existing.createdAt.getTime() + 86400000),
-      message: "Image replaced successfully!"
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// PUT /api/:slug/blank
 router.put("/:slug/blank", async (req, res) => {
   try {
     const { slug } = req.params;
     const existing = await Image.findOne({ slug });
     if (!existing) return res.status(404).json({ error: "Slug not found!" });
 
-    await cloudinary.uploader.destroy(existing.publicId);
+    if (existing.publicId) await cloudinary.uploader.destroy(existing.publicId);
 
     const blankPng = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
@@ -129,24 +148,38 @@ router.put("/:slug/blank", async (req, res) => {
     existing.publicId = result.public_id;
     await existing.save();
 
-    res.json({
-      imageUrl: existing.imageUrl,
-      slug: existing.slug,
-      message: "Image cleared!"
-    });
+    res.json({ imageUrl: existing.imageUrl, slug: existing.slug, message: "Image cleared!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// PUT /api/:slug/text — update text only
+router.put("/:slug/text", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { text } = req.body;
+    const existing = await Image.findOne({ slug });
+    if (!existing) return res.status(404).json({ error: "Slug not found!" });
+    existing.text = text;
+    await existing.save();
+    res.json({ slug: existing.slug, text: existing.text, message: "Text updated!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/:slug
 router.get("/:slug", async (req, res) => {
   try {
     const image = await Image.findOne({ slug: req.params.slug });
     if (!image) return res.status(404).json({ error: "No image found!" });
     await trackStat("visit");
     res.json({
-      imageUrl: image.imageUrl,
       slug: image.slug,
+      type: image.type,
+      imageUrl: image.imageUrl,
+      text: image.text,
       expiresAt: new Date(image.createdAt.getTime() + 86400000),
     });
   } catch (error) {

@@ -8,14 +8,14 @@ const imageSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
-  imageUrl: {
+  type: {
     type: String,
-    required: true,
+    enum: ["image", "text", "both"],
+    default: "image",
   },
-  publicId: {
-    type: String,
-    required: true,
-  },
+  imageUrl: { type: String, default: null },
+  publicId: { type: String, default: null },
+  text: { type: String, default: null },
   createdAt: {
     type: Date,
     default: Date.now,
